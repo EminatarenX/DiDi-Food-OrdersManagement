@@ -1,5 +1,4 @@
 import { Controller, Get, Param } from "@nestjs/common";
-import { IsUUID } from "class-validator";
 import { FindOrdersByCustomerIdUseCase } from "src/application/use-cases/find-order-by-customer.uc";
 import { FindOrdersDto } from "../dtos/find-orders.dto";
 
@@ -11,7 +10,11 @@ export class FindOrderByCustomerIdController {
     ) {}
 
     @Get("customer/:customerId")
-    findOrderByCustomerId(@Param() params: FindOrdersDto){
-        return this.findOrderByCustomerIdUseCase.execute(params.customerId);
+    async findOrderByCustomerId(@Param() params: FindOrdersDto){
+        return {
+            message: "Orders found successfully",
+            code: 200,
+            data: await this.findOrderByCustomerIdUseCase.execute(params.customerId)
+        }
     }
 }

@@ -1,32 +1,32 @@
 // Archivo: prisma-order.repository.ts (CORREGIDO)
 
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { PrismaClient } from "../../../generated/prisma/client"
-import { Order } from 'src/domain/entities/order.entity';
-import { OrderRepository } from 'src/domain/interfaces/order.repository';
-import { OrderStatus } from 'src/domain/vo/order-status.vo';
-
+import { Injectable, OnModuleInit } from "@nestjs/common";
+import { PrismaClient } from "../../../generated/prisma/client";
+import { Order } from "src/domain/entities/order.entity";
+import { OrderRepository } from "src/domain/interfaces/order.repository";
+import { OrderStatus } from "src/domain/vo/order-status.vo";
 
 @Injectable()
-export class PrismaOrderRepository extends PrismaClient implements OrderRepository, OnModuleInit{
-    async onModuleInit() {
-        await this.$connect();
-    }
-  
+export class PrismaOrderRepository
+  extends PrismaClient
+  implements OrderRepository, OnModuleInit
+{
+  async onModuleInit() {
+    await this.$connect();
+  }
+
   async save(order: Order): Promise<Order> {
     const data = this.toPrisma(order);
 
     const saved = await this.$transaction(async (prisma) => {
-
       await prisma.orderItem.deleteMany({
         where: { orderId: order.id },
       });
 
-   
       const upsertedOrder = await prisma.order.upsert({
         where: { id: order.id },
         update: data,
-        create: data, 
+        create: data,
         include: { items: true },
       });
 
@@ -41,7 +41,6 @@ export class PrismaOrderRepository extends PrismaClient implements OrderReposito
       where: { id: orderId },
       include: { items: true },
     });
-    console.log(JSON.stringify(record, null, 2)) 
     return record ? this.toDomain(record) : null;
   }
 
@@ -50,24 +49,28 @@ export class PrismaOrderRepository extends PrismaClient implements OrderReposito
       where: { customerId },
       include: { items: true },
     });
-    console.log(JSON.stringify(records, null, 2))
     return records.map(this.toDomain);
   }
 
   async updateStatus(orderId: string, orderStatus: OrderStatus): Promise<void> {
     await this.order.update({
       where: { id: orderId },
-      data: { status: orderStatus.status},
+      data: { status: orderStatus.status },
     });
   }
 
   async delete(orderId: string): Promise<void> {
-    await this.order.delete({
-      where: { id: orderId },
-    });
+    
+    await this.$transaction([
+      this.orderItem.deleteMany({
+        where: { orderId },
+      }),
+      this.order.delete({
+        where: { id: orderId },
+      }),
+    ]);
   }
-  
-  // 👇 MAPPER CORREGIDO: Eliminamos 'deleteMany'
+
   private toPrisma(order: Order) {
     return {
       id: order.id,

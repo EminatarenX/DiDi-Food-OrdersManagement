@@ -7,7 +7,11 @@ export class CreateOrderController {
   constructor(private readonly createOrderUseCase: CreateOrderUseCase) {} 
     
   @Post()
-  createOrder(@Body() createOrderDto: CreateOrderDto) {
-    return this.createOrderUseCase.execute(createOrderDto);
+  async createOrder(@Body() createOrderDto: CreateOrderDto) {
+    return {
+      message: "Order created successfully",
+      code: 201,
+      data: await this.createOrderUseCase.execute(createOrderDto)
+    }
   }
 }
